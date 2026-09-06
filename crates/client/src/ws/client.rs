@@ -11,7 +11,7 @@ use tokio_tungstenite::{
 
 type WsSink = SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>;
 type WsSource = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>;
-type WsError = tokio_tungstenite::tungstenite::Error;
+pub type WsError = tokio_tungstenite::tungstenite::Error;
 
 pub struct WsClient {
     sink: WsSink,
