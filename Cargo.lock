@@ -71,7 +71,9 @@ name = "cc-wired-client"
 version = "0.1.0"
 dependencies = [
  "config",
+ "futures-util",
  "serde",
+ "tokio",
  "tokio-tungstenite",
  "watchexec",
 ]
