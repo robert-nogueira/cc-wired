@@ -1,0 +1,40 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+  - id: check-yaml
+    name: 🧪 check yaml
+  - id: end-of-file-fixer
+    name: 🧪 fix end of files
+  - id: trailing-whitespace
+    name: 🧪 trailing whitespace
+  - id: mixed-line-ending
+    name: 🧪 mixed line ending
+  - id: double-quote-string-fixer
+    name: 🧪 double-quoted strings
+
+- repo: https://github.com/doublify/pre-commit-rust
+  rev: v1.0
+  hooks:
+    - id: cargo-check
+      name: 🧪 cargo check
+      args: ["--all-targets", "--all-features"]
+    - id: fmt
+      name: 🧪 fmt
+    - id: clippy
+      name: 🧪 clippy
+      args: [ "--", "-D", "warnings" ]
+
+
+- repo: https://github.com/commitizen-tools/commitizen
+  rev: v4.8.3
+  hooks:
+    - id: commitizen
+      name: 🧪 commitizen
+      additional_dependencies: [cz-conventional-gitmoji]
+
+- repo: https://github.com/ljnsn/cz-conventional-gitmoji
+  rev: v0.7.0
+  hooks:
+    - id: conventional-gitmoji
+      name: 🧪 gitmoji

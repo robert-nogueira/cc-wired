@@ -1,0 +1,12 @@
+[package]
+name = "cc-wired"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "cc-wired"
+path = "src/main.rs"
+
+[dependencies]
+cc-wired-client = { path = "../client", version = "0.1.0" }
+cc-wired-server = { path = "../server", version = "0.1.0" }
