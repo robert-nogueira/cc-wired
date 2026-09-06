@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+config = "0.15.25"
+serde = { version = "1.0.229", features = ["derive"] }
 tokio-tungstenite = "0.30.0"
 watchexec = "8.4.1"
