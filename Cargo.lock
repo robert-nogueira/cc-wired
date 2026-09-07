@@ -104,6 +104,7 @@ name = "cc-wired"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "cc-wired-client",
  "cc-wired-server",
  "clap",
