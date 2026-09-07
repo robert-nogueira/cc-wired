@@ -2,9 +2,15 @@ use crate::fswatcher::WatchTarget;
 use config::{Config, ConfigError};
 use serde::Deserialize;
 
+fn default_connect_timeout() -> u64 {
+    10
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub ws_url: String,
+    #[serde(default = "default_connect_timeout")]
+    pub connect_timeout_secs: u64,
     pub watch: Vec<WatchTarget>,
 }
 

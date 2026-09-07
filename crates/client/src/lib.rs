@@ -13,7 +13,12 @@ use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
 pub async fn run(settings: Settings) -> Result<(), Error> {
-    let mut ws = WsClient::connect(settings.ws_url).await?;
+    let mut ws = WsClient::connect(
+        settings.ws_url,
+        std::time::Duration::from_secs(settings.connect_timeout_secs),
+    )
+    .await?;
+
     let mut watcher = FsWatcher::new(settings.watch.clone())?;
 
     println!(

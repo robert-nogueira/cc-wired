@@ -18,9 +18,22 @@ pub struct WsClient {
 }
 
 impl WsClient {
-    pub async fn connect(addr: String) -> Result<Self, WsError> {
-        let (stream, _response) =
-            tokio_tungstenite::connect_async(addr).await?;
+    pub async fn connect(
+        addr: String,
+        timeout: std::time::Duration,
+    ) -> Result<Self, WsError> {
+        let (stream, _response) = tokio::time::timeout(
+            timeout,
+            tokio_tungstenite::connect_async(addr),
+        )
+        .await
+        .map_err(|_| {
+            WsError::Io(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "web socket connection timed out",
+            ))
+        })??;
+
         let (sink, source) = stream.split();
 
         Ok(Self { sink, source })
