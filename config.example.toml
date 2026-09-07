@@ -7,7 +7,8 @@
 
 # Address of the cc-wired server. Use ws:// for local/singleplayer,
 # wss:// for a remote/publicly hosted server.
-ws_url = "wss://your-domain.com:8080"
+ws_url = "ws://127.0.0.1:8080"
+# ws_url = "wss://your-domain.com:8080"
 
 # How long (seconds) to wait for the WebSocket connection before giving up.
 # Optional, defaults to 10.
