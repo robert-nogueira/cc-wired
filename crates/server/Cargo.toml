@@ -2,3 +2,11 @@
 name = "cc-wired-server"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+env_logger = "0.11.11"
+futures-channel = "0.3.34"
+futures-util = "0.3.34"
+log = "0.4.34"
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "sync"] }
+tokio-tungstenite = "0.30.0"
