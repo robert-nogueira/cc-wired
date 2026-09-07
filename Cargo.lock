@@ -108,6 +108,7 @@ dependencies = [
  "cc-wired-client",
  "cc-wired-server",
  "clap",
+ "tokio",
 ]
 
 [[package]]
