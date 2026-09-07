@@ -1,7 +1,6 @@
 use crate::fswatcher::WatchTarget;
 use config::{Config, ConfigError};
 use serde::Deserialize;
-use std::sync::LazyLock;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -22,6 +21,3 @@ impl Settings {
         Ok(settings)
     }
 }
-
-pub static SETTINGS: LazyLock<Settings> =
-    LazyLock::new(|| Settings::load().expect("Invalid config"));

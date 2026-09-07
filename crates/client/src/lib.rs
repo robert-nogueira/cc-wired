@@ -11,13 +11,13 @@ use std::error::Error;
 use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
-pub async fn run() -> Result<(), Box<dyn Error>> {
-    let mut ws = WsClient::connect().await?;
-    let mut watcher = FsWatcher::new(SETTINGS.watch.clone())?;
+pub async fn run(settings: Settings) -> Result<(), Box<dyn Error>> {
+    let mut ws = WsClient::connect(settings.ws_url).await?;
+    let mut watcher = FsWatcher::new(settings.watch.clone())?;
 
     println!(
         "cc-wired client started, watching {} target(s)",
-        SETTINGS.watch.len()
+        settings.watch.len()
     );
 
     loop {

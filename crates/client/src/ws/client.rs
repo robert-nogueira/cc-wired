@@ -1,4 +1,3 @@
-use crate::SETTINGS;
 use futures_util::{
     SinkExt, StreamExt,
     stream::{SplitSink, SplitStream},
@@ -19,9 +18,9 @@ pub struct WsClient {
 }
 
 impl WsClient {
-    pub async fn connect() -> Result<Self, WsError> {
+    pub async fn connect(addr: String) -> Result<Self, WsError> {
         let (stream, _response) =
-            tokio_tungstenite::connect_async(SETTINGS.ws_url.clone()).await?;
+            tokio_tungstenite::connect_async(addr).await?;
         let (sink, source) = stream.split();
 
         Ok(Self { sink, source })
