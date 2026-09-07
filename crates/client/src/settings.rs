@@ -1,3 +1,4 @@
+use crate::fswatcher::WatchTarget;
 use config::{Config, ConfigError};
 use serde::Deserialize;
 use std::sync::LazyLock;
@@ -5,6 +6,7 @@ use std::sync::LazyLock;
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub ws_url: String,
+    pub watch: Vec<WatchTarget>,
 }
 
 impl Settings {

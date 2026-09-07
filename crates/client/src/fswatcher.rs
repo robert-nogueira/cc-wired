@@ -2,8 +2,9 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 use tokio::sync::mpsc;
 
+#[derive(Debug, serde::Deserialize)]
 pub struct WatchTarget {
-    pub path: PathBuf,
+    pub dir: PathBuf,
     pub computer_id: String,
 }
 
@@ -22,7 +23,7 @@ impl FsWatcher {
         })?;
 
         for target in &targets {
-            watcher.watch(&target.path, RecursiveMode::Recursive)?;
+            watcher.watch(&target.dir, RecursiveMode::Recursive)?;
         }
 
         Ok(Self {
@@ -51,7 +52,7 @@ impl FsWatcher {
     fn target_for(&self, path: &Path) -> Option<String> {
         self.targets
             .iter()
-            .find(|t| path.starts_with(&t.path))
+            .find(|t| path.starts_with(&t.dir))
             .map(|t| t.computer_id.clone())
     }
 }

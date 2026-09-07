@@ -1,0 +1,26 @@
+# cc-wired client configuration
+#
+# Copy this file to `config.toml` in the directory where you run `cc-wired watch`
+# (or `cc-wired`, if reading from the working directory), and adjust the values
+# below. Every field here can also be overridden with an environment variable,
+# e.g. WS_URL=wss://other-host:8080 cc-wired watch
+
+# Address of the cc-wired server. Use ws:// for local/singleplayer,
+# wss:// for a remote/publicly hosted server.
+ws_url = "wss://your-domain.com:8080"
+
+# One [[watch]] block per local directory you want synced.
+# Each directory maps to a single in-game computer, identified by computer_id
+# (this id must match what you configured in that computer's config.lua).
+
+[[watch]]
+dir = "./scripts/base"
+computer_id = "computer-1"
+
+[[watch]]
+dir = "./scripts/mining-turtle"
+computer_id = "turtle-3"
+
+[[watch]]
+dir = "./scripts/farm-controller"
+computer_id = "computer-7"
