@@ -2,7 +2,7 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 use tokio::sync::mpsc;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct WatchTarget {
     pub dir: PathBuf,
     pub computer_id: String,
