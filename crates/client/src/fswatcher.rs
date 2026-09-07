@@ -1,4 +1,5 @@
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+// fswatcher.rs
+use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 use tokio::sync::mpsc;
 
@@ -10,7 +11,7 @@ pub struct WatchTarget {
 
 pub struct FsWatcher {
     _watcher: RecommendedWatcher,
-    events: mpsc::UnboundedReceiver<notify::Result<notify::Event>>,
+    events: mpsc::UnboundedReceiver<notify::Result<Event>>,
     targets: Vec<WatchTarget>,
 }
 
@@ -22,37 +23,45 @@ impl FsWatcher {
             let _ = tx.send(res);
         })?;
 
-        for target in &targets {
-            watcher.watch(&target.dir, RecursiveMode::Recursive)?;
+        let mut resolved = Vec::with_capacity(targets.len());
+        for target in targets {
+            let canonical = std::fs::canonicalize(&target.dir)?;
+            watcher.watch(&canonical, RecursiveMode::Recursive)?;
+            resolved.push(WatchTarget {
+                dir: canonical,
+                ..target
+            });
         }
 
         Ok(Self {
             _watcher: watcher,
             events,
-            targets,
+            targets: resolved,
         })
     }
 
     pub async fn recv(
         &mut self,
-    ) -> Option<notify::Result<(String, notify::Event)>> {
+    ) -> Option<notify::Result<(String, PathBuf, Event)>> {
         let res = self.events.recv().await?;
 
         Some(res.map(|event| {
-            let computer_id = event
-                .paths
-                .first()
-                .and_then(|p| self.target_for(p))
-                .unwrap_or_default();
+            let path = event.paths.first().cloned().unwrap_or_default();
+            let (computer_id, relative) =
+                self.resolve(&path).unwrap_or((String::new(), path.clone()));
 
-            (computer_id, event)
+            (computer_id, relative, event)
         }))
     }
 
-    fn target_for(&self, path: &Path) -> Option<String> {
+    fn resolve(&self, path: &Path) -> Option<(String, PathBuf)> {
         self.targets
             .iter()
             .find(|t| path.starts_with(&t.dir))
-            .map(|t| t.computer_id.clone())
+            .map(|t| {
+                let relative =
+                    path.strip_prefix(&t.dir).unwrap_or(path).to_path_buf();
+                (t.computer_id.clone(), relative)
+            })
     }
 }

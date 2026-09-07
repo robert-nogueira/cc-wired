@@ -8,6 +8,7 @@ pub use ws::{ClientMessage, WsClient, WsError};
 use fswatcher::FsWatcher;
 use notify::EventKind;
 use std::error::Error;
+use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
@@ -23,7 +24,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         tokio::select! {
             Some(res) = watcher.recv() => {
                 match res {
-                    Ok((computer_id, event)) => handle_fs_event(&mut ws, computer_id, event).await,
+                            Ok((computer_id, path, event)) => handle_fs_event(&mut ws, computer_id, path, event).await,
                     Err(e) => eprintln!("watch error: {e:?}"),
                 }
             }
@@ -50,48 +51,49 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
 async fn handle_fs_event(
     ws: &mut WsClient,
     computer_id: String,
+    relative_path: PathBuf,
     event: notify::Event,
 ) {
-    for path in &event.paths {
-        let path_str = path.to_string_lossy().into_owned();
+    let path_str = relative_path.to_string_lossy().into_owned();
 
-        let message = match event.kind {
-            EventKind::Create(_) => {
-                let Ok(contents) = tokio::fs::read_to_string(path).await
-                else {
-                    continue;
-                };
-                ClientMessage::FileCreated {
-                    computer_id: computer_id.clone(),
-                    path: path_str,
-                    contents,
-                }
-            }
-            EventKind::Modify(_) => {
-                let Ok(contents) = tokio::fs::read_to_string(path).await
-                else {
-                    continue;
-                };
-                ClientMessage::FileChanged {
-                    computer_id: computer_id.clone(),
-                    path: path_str,
-                    contents,
-                }
-            }
-            EventKind::Remove(_) => ClientMessage::FileDeleted {
-                computer_id: computer_id.clone(),
+    let absolute = event.paths.first().cloned().unwrap_or_default();
+
+    let message = match event.kind {
+        EventKind::Create(_) => {
+            let Ok(contents) = tokio::fs::read_to_string(&absolute).await
+            else {
+                return;
+            };
+            ClientMessage::FileCreated {
+                computer_id,
                 path: path_str,
-            },
-            _ => continue,
-        };
-
-        match serde_json::to_string(&message) {
-            Ok(ws_msg) => {
-                if let Err(e) = ws.send(ws_msg.into()).await {
-                    eprintln!("failed to send update: {e:?}");
-                }
+                contents,
             }
-            Err(e) => eprintln!("failed to serialize message: {e:?}"),
         }
+        EventKind::Modify(_) => {
+            let Ok(contents) = tokio::fs::read_to_string(&absolute).await
+            else {
+                return;
+            };
+            ClientMessage::FileChanged {
+                computer_id,
+                path: path_str,
+                contents,
+            }
+        }
+        EventKind::Remove(_) => ClientMessage::FileDeleted {
+            computer_id,
+            path: path_str,
+        },
+        _ => return,
+    };
+
+    match serde_json::to_string(&message) {
+        Ok(json) => {
+            if let Err(e) = ws.send(json.into()).await {
+                eprintln!("failed to send update: {e:?}");
+            }
+        }
+        Err(e) => eprintln!("failed to serialize message: {e:?}"),
     }
 }
