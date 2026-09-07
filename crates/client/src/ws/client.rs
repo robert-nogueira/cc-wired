@@ -3,6 +3,8 @@ use futures_util::{
     stream::{SplitSink, SplitStream},
 };
 
+use tokio_tungstenite::tungstenite::http::Uri;
+
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream, tungstenite::Message,
@@ -22,9 +24,15 @@ impl WsClient {
         addr: String,
         timeout: std::time::Duration,
     ) -> Result<Self, WsError> {
+        let uri: Uri = addr.parse()?;
+        let client_id = uuid::Uuid::new_v4();
+        let builder =
+            tokio_tungstenite::tungstenite::ClientRequestBuilder::new(uri)
+                .with_header("x-client-id", client_id);
+
         let (stream, _response) = tokio::time::timeout(
             timeout,
-            tokio_tungstenite::connect_async(addr),
+            tokio_tungstenite::connect_async(builder),
         )
         .await
         .map_err(|_| {
