@@ -23,7 +23,7 @@ pub async fn run(settings: Settings) -> Result<(), Error> {
 
     println!(
         "cc-wired client started, watching {} target(s)",
-        settings.watch.len()
+        watcher.targets.len()
     );
 
     loop {

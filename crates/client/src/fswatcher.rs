@@ -12,7 +12,7 @@ pub struct WatchTarget {
 pub struct FsWatcher {
     _watcher: RecommendedWatcher,
     events: mpsc::UnboundedReceiver<notify::Result<Event>>,
-    targets: Vec<WatchTarget>,
+    pub targets: Vec<WatchTarget>,
 }
 
 impl FsWatcher {
@@ -25,12 +25,30 @@ impl FsWatcher {
 
         let mut resolved = Vec::with_capacity(targets.len());
         for target in targets {
-            let canonical = std::fs::canonicalize(&target.dir)?;
+            let canonical = match std::fs::canonicalize(&target.dir) {
+                Ok(path) => path,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    eprintln!(
+                        "warning: ignoring {} ({e})",
+                        target.dir.display()
+                    );
+                    continue;
+                }
+                Err(e) => return Err(e.into()),
+            };
             watcher.watch(&canonical, RecursiveMode::Recursive)?;
             resolved.push(WatchTarget {
                 dir: canonical,
                 ..target
             });
+        }
+
+        if resolved.is_empty() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "no valid watch directories in config",
+            )
+            .into());
         }
 
         Ok(Self {
