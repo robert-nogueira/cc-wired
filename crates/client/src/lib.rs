@@ -1,17 +1,18 @@
+pub mod error;
 pub mod fswatcher;
 mod settings;
 pub mod ws;
 
+pub use error::Error;
 pub use settings::*;
 pub use ws::{ClientMessage, WsClient, WsError};
 
 use fswatcher::FsWatcher;
 use notify::EventKind;
-use std::error::Error;
 use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
-pub async fn run(settings: Settings) -> Result<(), Box<dyn Error>> {
+pub async fn run(settings: Settings) -> Result<(), Error> {
     let mut ws = WsClient::connect(settings.ws_url).await?;
     let mut watcher = FsWatcher::new(settings.watch.clone())?;
 
@@ -24,8 +25,18 @@ pub async fn run(settings: Settings) -> Result<(), Box<dyn Error>> {
         tokio::select! {
             Some(res) = watcher.recv() => {
                 match res {
-                            Ok((computer_id, path, event)) => handle_fs_event(&mut ws, computer_id, path, event).await,
-                    Err(e) => eprintln!("watch error: {e:?}"),
+                    Ok((computer_id, path, event)) => {
+                        handle_fs_event(
+                            &mut ws,
+                            computer_id,
+                            path,
+                            event,
+                        ).await;
+                    }
+
+                    Err(e) => {
+                        eprintln!("watch error: {e:?}");
+                    }
                 }
             }
             Some(msg) = ws.recv() => {
@@ -34,7 +45,10 @@ pub async fn run(settings: Settings) -> Result<(), Box<dyn Error>> {
                         println!("connection lost, shutting down");
                         break;
                     }
-                    Ok(other) => println!("received: {other:?}"),
+
+                    Ok(other) => {
+                        println!("received: {other:?}");
+                    }
                 }
             }
             _ = tokio::signal::ctrl_c() => {
@@ -94,6 +108,9 @@ async fn handle_fs_event(
                 eprintln!("failed to send update: {e:?}");
             }
         }
-        Err(e) => eprintln!("failed to serialize message: {e:?}"),
+
+        Err(e) => {
+            eprintln!("failed to serialize message: {e:?}");
+        }
     }
 }

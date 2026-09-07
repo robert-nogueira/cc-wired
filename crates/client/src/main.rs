@@ -1,6 +1,6 @@
-use cc_wired_client::Settings;
+use cc_wired_client::{Error, Settings};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    cc_wired_client::run(Settings::load().expect("Invalid config")).await
+async fn main() -> Result<(), Error> {
+    cc_wired_client::run(Settings::load(None).expect("Invalid config")).await
 }
