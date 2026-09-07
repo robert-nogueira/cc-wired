@@ -9,6 +9,10 @@
 # wss:// for a remote/publicly hosted server.
 ws_url = "wss://your-domain.com:8080"
 
+# How long (seconds) to wait for the WebSocket connection before giving up.
+# Optional, defaults to 10.
+# connect_timeout_secs = 10
+
 # One [[watch]] block per local directory you want synced.
 # Each directory maps to a single in-game computer, identified by computer_id
 # (this id must match what you configured in that computer's config.lua).
