@@ -1,4 +1,5 @@
 mod client;
+pub mod fswatcher;
 mod settings;
 pub mod ws;
 
