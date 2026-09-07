@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 config = "0.15.25"
 futures-util = "0.3.34"
+notify = "8.2.0"
 serde = { version = "1.0.229", features = ["derive"] }
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "sync"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "macros", "net", "sync", "signal"] }
 tokio-tungstenite = "0.30.0"
-watchexec = "8.4.1"
