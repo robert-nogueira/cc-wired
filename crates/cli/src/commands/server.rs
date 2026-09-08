@@ -25,7 +25,7 @@ impl Command for Server {
         if let Some(port) = self.port {
             settings.port = port;
         }
-        cc_wired_server::run(settings).await;
+        cc_wired_server::run(settings).await?;
 
         Ok(())
     }
