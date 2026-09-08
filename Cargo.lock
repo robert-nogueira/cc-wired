@@ -150,10 +150,12 @@ dependencies = [
 name = "cc-wired-server"
 version = "0.1.0"
 dependencies = [
+ "config",
  "env_logger",
  "futures-channel",
  "futures-util",
  "log",
+ "serde",
  "tokio",
  "tokio-tungstenite",
 ]
