@@ -1,5 +1,5 @@
 pub mod settings;
 mod startup;
-mod ws;
+pub mod ws;
 
 pub use startup::run;
