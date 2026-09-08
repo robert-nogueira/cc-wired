@@ -140,3 +140,84 @@ async fn consumer_responds_to_ping() {
 
     sync(&mut consumer).await;
 }
+
+#[actix_web::test]
+async fn consumer_close_frame_removes_registration() {
+    let mut srv = spawn_app();
+
+    let mut consumer = srv.ws_at("/computer-1").await.unwrap();
+    consumer.send(Message::Close(None)).await.unwrap();
+
+    let mut producer = srv.ws_at("/").await.unwrap();
+    producer
+        .send(Message::Text(
+            r#"{"computer_id":"computer-1","payload":"stale?"}"#.into(),
+        ))
+        .await
+        .unwrap();
+    sync(&mut producer).await;
+
+    let mut fresh_consumer = srv.ws_at("/computer-1").await.unwrap();
+    let got = recv_within(&mut fresh_consumer, SHORT).await;
+    assert!(
+        got.is_none(),
+        "expected no buffered/stale message, got {got:?}"
+    );
+}
+
+#[actix_web::test]
+async fn consumer_ignores_unknown_frame_types() {
+    let mut srv = spawn_app();
+    let mut consumer = srv.ws_at("/computer-1").await.unwrap();
+
+    consumer
+        .send(Message::Binary(Bytes::from_static(b"noise")))
+        .await
+        .unwrap();
+
+    sync(&mut consumer).await;
+}
+
+#[actix_web::test]
+async fn producer_close_frame_does_not_affect_registered_consumers() {
+    let mut srv = spawn_app();
+    let mut consumer = srv.ws_at("/computer-1").await.unwrap();
+    let mut producer = srv.ws_at("/").await.unwrap();
+
+    producer.send(Message::Close(None)).await.unwrap();
+
+    let mut producer2 = srv.ws_at("/").await.unwrap();
+    let payload = r#"{"computer_id":"computer-1","payload":"still here"}"#;
+    producer2.send(Message::Text(payload.into())).await.unwrap();
+
+    let frame = recv_within(&mut consumer, SHORT)
+        .await
+        .expect("expected a frame");
+    match frame.unwrap() {
+        Frame::Text(bytes) => assert_eq!(bytes, payload.as_bytes()),
+        other => panic!("unexpected frame: {other:?}"),
+    }
+}
+
+#[actix_web::test]
+async fn producer_ignores_unknown_frame_types() {
+    let mut srv = spawn_app();
+    let mut consumer = srv.ws_at("/computer-1").await.unwrap();
+    let mut producer = srv.ws_at("/").await.unwrap();
+
+    producer
+        .send(Message::Binary(Bytes::from_static(b"noise")))
+        .await
+        .unwrap();
+
+    let payload = r#"{"computer_id":"computer-1","payload":"hello"}"#;
+    producer.send(Message::Text(payload.into())).await.unwrap();
+
+    let frame = recv_within(&mut consumer, SHORT)
+        .await
+        .expect("expected a frame");
+    match frame.unwrap() {
+        Frame::Text(bytes) => assert_eq!(bytes, payload.as_bytes()),
+        other => panic!("unexpected frame: {other:?}"),
+    }
+}
