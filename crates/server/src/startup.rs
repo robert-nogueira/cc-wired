@@ -14,7 +14,8 @@ pub async fn run(settings: Settings) -> std::io::Result<()> {
     // thread rather than awaited directly from our Send-bound async_trait.
     tokio::task::spawn_blocking(move || {
         actix_web::rt::System::new().block_on(async move {
-            let registry = web::Data::new(Registry::default());
+            let registry: web::Data<Registry> =
+                web::Data::new(Registry::default());
 
             HttpServer::new(move || {
                 App::new()

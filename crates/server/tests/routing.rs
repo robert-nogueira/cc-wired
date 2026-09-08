@@ -8,9 +8,9 @@ use tokio::time::timeout;
 
 fn spawn_app() -> actix_test::TestServer {
     actix_test::start(|| {
-        App::new()
-            .app_data(web::Data::new(Registry::default()))
-            .configure(configure)
+        let registry: web::Data<Registry> =
+            web::Data::new(Registry::default());
+        App::new().app_data(registry).configure(configure)
     })
 }
 
