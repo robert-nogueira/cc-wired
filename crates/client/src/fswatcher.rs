@@ -59,15 +59,20 @@ impl FsWatcher {
     pub async fn recv(
         &mut self,
     ) -> Option<notify::Result<(String, PathBuf, Event)>> {
-        let res = self.events.recv().await?;
+        loop {
+            let event = match self.events.recv().await? {
+                Ok(event) => event,
+                Err(e) => return Some(Err(e)),
+            };
 
-        Some(res.map(|event| {
             let path = event.paths.first().cloned().unwrap_or_default();
-            let (computer_id, relative) =
-                self.resolve(&path).unwrap_or((String::new(), path.clone()));
+            let Some((computer_id, relative)) = self.resolve(&path) else {
+                warn!("ignoring event for untracked path {}", path.display());
+                continue;
+            };
 
-            (computer_id, relative, event)
-        }))
+            return Some(Ok((computer_id, relative, event)));
+        }
     }
 
     fn resolve(&self, path: &Path) -> Option<(String, PathBuf)> {
