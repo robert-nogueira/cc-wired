@@ -1,8 +1,8 @@
 use actix_web::{HttpRequest, HttpResponse, web};
 use actix_ws::Message;
+use cc_wired_protocol::ClientMessage;
 use futures_util::StreamExt;
 use log::warn;
-use serde_json::Value;
 
 use super::registry::{Registry, RouteOutcome};
 
@@ -32,15 +32,11 @@ pub async fn handle(
 }
 
 async fn dispatch(registry: &Registry, text: &str) {
-    let Ok(value) = serde_json::from_str::<Value>(text) else {
-        warn!("dropping non-JSON producer message");
+    let Ok(message) = serde_json::from_str::<ClientMessage>(text) else {
+        warn!("dropping unparseable producer message");
         return;
     };
-    let Some(computer_id) = value.get("computer_id").and_then(Value::as_str)
-    else {
-        warn!("dropping producer message without computer_id");
-        return;
-    };
+    let computer_id = message.computer_id();
 
     match registry.route(computer_id, text).await {
         RouteOutcome::Delivered | RouteOutcome::SendFailed => {}

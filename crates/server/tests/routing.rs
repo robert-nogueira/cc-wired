@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use actix_web::{App, web, web::Bytes};
 use awc::ws::{Frame, Message};
+use cc_wired_protocol::ClientMessage;
 use cc_wired_server::ws::{Registry, configure};
 use futures_util::{SinkExt, StreamExt};
 use tokio::time::timeout;
@@ -12,6 +13,17 @@ fn spawn_app() -> actix_test::TestServer {
             web::Data::new(Registry::default());
         App::new().app_data(registry).configure(configure)
     })
+}
+
+/// Serializes a valid `file_changed` message, the shape a producer actually
+/// sends on disk changes.
+fn file_changed(computer_id: &str, contents: &str) -> String {
+    serde_json::to_string(&ClientMessage::FileChanged {
+        computer_id: computer_id.to_string(),
+        path: "test.lua".to_string(),
+        contents: contents.to_string(),
+    })
+    .unwrap()
 }
 
 const SHORT: Duration = Duration::from_millis(300);
@@ -47,8 +59,11 @@ async fn delivers_message_to_registered_consumer() {
     let mut consumer = srv.ws_at("/computer-1").await.unwrap();
     let mut producer = srv.ws_at("/").await.unwrap();
 
-    let payload = r#"{"computer_id":"computer-1","payload":"hello"}"#;
-    producer.send(Message::Text(payload.into())).await.unwrap();
+    let payload = file_changed("computer-1", "hello");
+    producer
+        .send(Message::Text(payload.clone().into()))
+        .await
+        .unwrap();
 
     let frame = recv_within(&mut consumer, SHORT)
         .await
@@ -66,7 +81,7 @@ async fn does_not_deliver_to_wrong_consumer() {
     let mut other_consumer = srv.ws_at("/computer-2").await.unwrap();
     let mut producer = srv.ws_at("/").await.unwrap();
 
-    let payload = r#"{"computer_id":"computer-1","payload":"hello"}"#;
+    let payload = file_changed("computer-1", "hello");
     producer.send(Message::Text(payload.into())).await.unwrap();
     sync(&mut producer).await;
 
@@ -99,7 +114,10 @@ async fn drops_message_missing_computer_id() {
     let mut producer = srv.ws_at("/").await.unwrap();
 
     producer
-        .send(Message::Text(r#"{"payload":"hello"}"#.into()))
+        .send(Message::Text(
+            r#"{"type":"file_changed","path":"test.lua","contents":"hello"}"#
+                .into(),
+        ))
         .await
         .unwrap();
     sync(&mut producer).await;
@@ -117,12 +135,8 @@ async fn disconnect_removes_registration_so_new_connection_gets_nothing_stale()
     drop(consumer);
 
     let mut producer = srv.ws_at("/").await.unwrap();
-    producer
-        .send(Message::Text(
-            r#"{"computer_id":"computer-1","payload":"stale?"}"#.into(),
-        ))
-        .await
-        .unwrap();
+    let payload = file_changed("computer-1", "stale?");
+    producer.send(Message::Text(payload.into())).await.unwrap();
     sync(&mut producer).await;
 
     let mut fresh_consumer = srv.ws_at("/computer-1").await.unwrap();
@@ -149,12 +163,8 @@ async fn consumer_close_frame_removes_registration() {
     consumer.send(Message::Close(None)).await.unwrap();
 
     let mut producer = srv.ws_at("/").await.unwrap();
-    producer
-        .send(Message::Text(
-            r#"{"computer_id":"computer-1","payload":"stale?"}"#.into(),
-        ))
-        .await
-        .unwrap();
+    let payload = file_changed("computer-1", "stale?");
+    producer.send(Message::Text(payload.into())).await.unwrap();
     sync(&mut producer).await;
 
     let mut fresh_consumer = srv.ws_at("/computer-1").await.unwrap();
@@ -187,8 +197,11 @@ async fn producer_close_frame_does_not_affect_registered_consumers() {
     producer.send(Message::Close(None)).await.unwrap();
 
     let mut producer2 = srv.ws_at("/").await.unwrap();
-    let payload = r#"{"computer_id":"computer-1","payload":"still here"}"#;
-    producer2.send(Message::Text(payload.into())).await.unwrap();
+    let payload = file_changed("computer-1", "still here");
+    producer2
+        .send(Message::Text(payload.clone().into()))
+        .await
+        .unwrap();
 
     let frame = recv_within(&mut consumer, SHORT)
         .await
@@ -210,8 +223,11 @@ async fn producer_ignores_unknown_frame_types() {
         .await
         .unwrap();
 
-    let payload = r#"{"computer_id":"computer-1","payload":"hello"}"#;
-    producer.send(Message::Text(payload.into())).await.unwrap();
+    let payload = file_changed("computer-1", "hello");
+    producer
+        .send(Message::Text(payload.clone().into()))
+        .await
+        .unwrap();
 
     let frame = recv_within(&mut consumer, SHORT)
         .await

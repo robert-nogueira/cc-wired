@@ -530,6 +530,7 @@ dependencies = [
  "actix-web",
  "actix-ws",
  "awc",
+ "cc-wired-protocol",
  "config",
  "env_logger",
  "futures-util",
