@@ -14,7 +14,10 @@ use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
 pub async fn run(settings: Settings) -> Result<(), Error> {
-    let _ = env_logger::try_init();
+    let _ = env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info"),
+    )
+    .try_init();
 
     let mut ws = WsClient::connect(
         settings.ws_url,
