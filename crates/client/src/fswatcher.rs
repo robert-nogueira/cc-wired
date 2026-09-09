@@ -1,4 +1,5 @@
 // fswatcher.rs
+use log::warn;
 use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
 use tokio::sync::mpsc;
@@ -28,10 +29,7 @@ impl FsWatcher {
             let canonical = match std::fs::canonicalize(&target.dir) {
                 Ok(path) => path,
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                    eprintln!(
-                        "warning: ignoring {} ({e})",
-                        target.dir.display()
-                    );
+                    warn!("ignoring {} ({e})", target.dir.display());
                     continue;
                 }
                 Err(e) => return Err(e.into()),

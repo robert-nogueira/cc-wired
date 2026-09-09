@@ -506,7 +506,9 @@ version = "0.1.0"
 dependencies = [
  "cc-wired-protocol",
  "config",
+ "env_logger",
  "futures-util",
+ "log",
  "notify",
  "serde",
  "serde_json",

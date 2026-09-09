@@ -8,11 +8,14 @@ pub use settings::*;
 pub use ws::{ClientMessage, WsClient, WsError};
 
 use fswatcher::FsWatcher;
+use log::{debug, error, info, warn};
 use notify::EventKind;
 use std::path::PathBuf;
 use tokio_tungstenite::tungstenite::Message;
 
 pub async fn run(settings: Settings) -> Result<(), Error> {
+    let _ = env_logger::try_init();
+
     let mut ws = WsClient::connect(
         settings.ws_url,
         std::time::Duration::from_secs(settings.connect_timeout_secs),
@@ -21,7 +24,7 @@ pub async fn run(settings: Settings) -> Result<(), Error> {
 
     let mut watcher = FsWatcher::new(settings.watch.clone())?;
 
-    println!(
+    info!(
         "cc-wired client started, watching {} target(s)",
         watcher.targets.len()
     );
@@ -40,24 +43,24 @@ pub async fn run(settings: Settings) -> Result<(), Error> {
                     }
 
                     Err(e) => {
-                        eprintln!("watch error: {e:?}");
+                        error!("watch error: {e:?}");
                     }
                 }
             }
             Some(msg) = ws.recv() => {
                 match msg {
                     Ok(Message::Close(_)) | Err(_) => {
-                        println!("connection lost, shutting down");
+                        info!("connection lost, shutting down");
                         break;
                     }
 
                     Ok(other) => {
-                        println!("received: {other:?}");
+                        debug!("received: {other:?}");
                     }
                 }
             }
             _ = tokio::signal::ctrl_c() => {
-                println!("shutting down");
+                info!("shutting down");
                 let _ = ws.close().await;
                 break;
             }
@@ -81,8 +84,10 @@ async fn handle_fs_event(
         EventKind::Create(_) => {
             let Ok(contents) = tokio::fs::read_to_string(&absolute).await
             else {
+                warn!("failed to read {}, skipping", absolute.display());
                 return;
             };
+            info!("{path_str} created -> '{computer_id}'");
             ClientMessage::FileCreated {
                 computer_id,
                 path: path_str,
@@ -92,30 +97,35 @@ async fn handle_fs_event(
         EventKind::Modify(_) => {
             let Ok(contents) = tokio::fs::read_to_string(&absolute).await
             else {
+                warn!("failed to read {}, skipping", absolute.display());
                 return;
             };
+            info!("{path_str} changed -> '{computer_id}'");
             ClientMessage::FileChanged {
                 computer_id,
                 path: path_str,
                 contents,
             }
         }
-        EventKind::Remove(_) => ClientMessage::FileDeleted {
-            computer_id,
-            path: path_str,
-        },
+        EventKind::Remove(_) => {
+            info!("{path_str} deleted -> '{computer_id}'");
+            ClientMessage::FileDeleted {
+                computer_id,
+                path: path_str,
+            }
+        }
         _ => return,
     };
 
     match serde_json::to_string(&message) {
         Ok(json) => {
             if let Err(e) = ws.send(json.into()).await {
-                eprintln!("failed to send update: {e:?}");
+                warn!("failed to send update: {e:?}");
             }
         }
 
         Err(e) => {
-            eprintln!("failed to serialize message: {e:?}");
+            error!("failed to serialize message: {e:?}");
         }
     }
 }
