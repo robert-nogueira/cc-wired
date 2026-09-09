@@ -1,4 +1,3 @@
 mod client;
-mod messages;
+pub use cc_wired_protocol::ClientMessage;
 pub use client::{WsClient, WsError};
-pub use messages::ClientMessage;

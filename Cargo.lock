@@ -504,6 +504,7 @@ dependencies = [
 name = "cc-wired-client"
 version = "0.1.0"
 dependencies = [
+ "cc-wired-protocol",
  "config",
  "futures-util",
  "notify",
@@ -512,6 +513,13 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "uuid",
+]
+
+[[package]]
+name = "cc-wired-protocol"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+cc-wired-protocol = { path = "../protocol" }
 config = "0.15.25"
 futures-util = "0.3.34"
 notify = "8.2.0"
