@@ -2,7 +2,7 @@ use actix_web::{HttpRequest, HttpResponse, web};
 use actix_ws::Message;
 use cc_wired_protocol::ClientMessage;
 use futures_util::StreamExt;
-use log::warn;
+use log::{info, warn};
 
 use super::registry::{Registry, RouteOutcome};
 
@@ -11,7 +11,16 @@ pub async fn handle(
     body: web::Payload,
     registry: web::Data<Registry>,
 ) -> actix_web::Result<HttpResponse> {
+    let client_id = req
+        .headers()
+        .get("x-client-id")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown")
+        .to_string();
+
     let (response, mut session, mut stream) = actix_ws::handle(&req, body)?;
+
+    info!("producer '{client_id}' connected");
 
     actix_web::rt::spawn(async move {
         while let Some(Ok(msg)) = stream.next().await {
@@ -26,6 +35,7 @@ pub async fn handle(
                 _ => {}
             }
         }
+        info!("producer '{client_id}' disconnected");
     });
 
     Ok(response)

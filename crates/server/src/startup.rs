@@ -5,7 +5,7 @@ use log::info;
 
 pub async fn run(settings: Settings) -> std::io::Result<()> {
     let _ = env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info"),
+        env_logger::Env::default().default_filter_or("info,actix_server=warn"),
     )
     .try_init();
     let addr = format!("{}:{}", settings.host, settings.port);
